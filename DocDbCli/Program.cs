@@ -56,6 +56,19 @@
                 operation = OperationType.CREATECOLLECTION;
                 parameters.Add("newdbname", args[1]);
                 parameters.Add("newcolname", args[2]);
+
+                int throughputInRUs = 400; // default value
+                if (args.Length == 4)
+                {
+                    bool isInt = int.TryParse(args[3], out throughputInRUs);
+                    if(!isInt || throughputInRUs % 100 != 0 || throughputInRUs < 400)
+                    {
+                        PrintUsage("Throughput parameter must be an integer multiple of 100 and >= 400");
+                        return;
+                    }
+                }
+                parameters.Add("throughput", throughputInRUs.ToString());
+
             }
             else if (args[0] == "i")
             {
@@ -91,7 +104,7 @@
                     p.CreateDatabaseIfNotExists(parameters["newdbname"]).Wait();
                     break;
                 case OperationType.CREATECOLLECTION:
-                    p.CreateDocumentCollectionIfNotExists(parameters["newdbname"], parameters["newcolname"]).Wait();
+                    p.CreateDocumentCollectionIfNotExists(parameters["newdbname"], parameters["newcolname"], int.Parse(parameters["throughput"])).Wait();
                     break;
                 case OperationType.INSERTDOCUMENT:
                     StreamReader sr = new StreamReader(parameters["jsonfile"]);
@@ -109,15 +122,15 @@
             try
             {
                 await _client.ReadDatabaseAsync(UriFactory.CreateDatabaseUri(databaseName));
-                WriteToConsoleAndPromptToContinue("Found {0}", databaseName);
+                WriteToConsoleAndPromptToContinue("Found already existing database '{0}'", databaseName);
             }
             catch (DocumentClientException de)
             {
                 // If the database does not exist, create a new database
                 if (de.StatusCode == HttpStatusCode.NotFound)
                 {
-                    await _client.CreateDatabaseAsync(new Database { Id = databaseName });
-                    WriteToConsoleAndPromptToContinue("Created {0}", databaseName);
+                    await _client.CreateDatabaseAsync(new Database { Id = databaseName,  });
+                    WriteToConsoleAndPromptToContinue("Created new database '{0}'", databaseName);
                 }
                 else
                 {
@@ -126,14 +139,14 @@
             }
         }
 
-        private async Task CreateDocumentCollectionIfNotExists(string databaseName, string collectionName)
+        private async Task CreateDocumentCollectionIfNotExists(string databaseName, string collectionName, int throughput)
         {
             await CreateDocumentDbClient();
 
             try
             {
                 await _client.ReadDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(databaseName, collectionName));
-                WriteToConsoleAndPromptToContinue("Found {0}", collectionName);
+                WriteToConsoleAndPromptToContinue("Found already existing document collection '{0}'", collectionName);
             }
             catch (DocumentClientException de)
             {
@@ -149,10 +162,10 @@
                     // Here we create a collection with 400 RU/s.
                     await _client.CreateDocumentCollectionAsync(
                         UriFactory.CreateDatabaseUri(databaseName),
-                        collectionInfo /*, this has multiple options and pricing implications
-                        new RequestOptions { OfferThroughput = 400,  } */);
+                        collectionInfo, 
+                        new RequestOptions { OfferThroughput = throughput } );
 
-                    WriteToConsoleAndPromptToContinue("Created {0}", collectionName);
+                    WriteToConsoleAndPromptToContinue("Created new document collection '{0}'", collectionName);
                 }
                 else
                 {
@@ -181,14 +194,14 @@
             if (errorMessage != null)
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine("Ooops: Your forgot your command line parameters. Please try again.");
+                Console.WriteLine(errorMessage);
                 Console.ForegroundColor = ConsoleColor.Gray;
             }
 
             Console.WriteLine("Usage:");
             Console.WriteLine("DocDbCli t                               Test connection using settings in configuration file");
             Console.WriteLine("DocDbCli cd dbname                       Create database named 'dbname'");
-            Console.WriteLine("DocDbCli cc dbname colname               Create collection named 'colname' in database 'dbname'");
+            Console.WriteLine("DocDbCli cc dbname colname [throughput, 400 by default] Create collection named 'colname' in database 'dbname'");
             Console.WriteLine("DocDbCli i dbname colname filename.json  Insert contents of json file into collection 'colname' in database 'dbname'");
         }
 
