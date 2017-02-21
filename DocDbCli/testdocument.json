@@ -1,0 +1,45 @@
+﻿{
+  "_id": "58ac8a7b5217aa12704b2117",
+  "index": 0,
+  "guid": "05ef5b97-89a7-4644-9a30-6acd17155260",
+  "isActive": true,
+  "balance": "$1,788.12",
+  "picture": "http://placehold.it/32x32",
+  "age": 29,
+  "eyeColor": "blue",
+  "name": "Strong Everett",
+  "gender": "male",
+  "company": "EARWAX",
+  "email": "strongeverett@earwax.com",
+  "phone": "+1 (888) 516-3959",
+  "address": "933 Hegeman Avenue, Enlow, Virginia, 574",
+  "about": "Ipsum consectetur ea laboris deserunt incididunt nisi aliquip. Consectetur irure eu ad anim aliquip laboris mollit ut magna quis id magna. Duis incididunt do sit cillum incididunt duis voluptate non. Anim pariatur ipsum velit non aliquip fugiat anim ullamco enim dolore labore laborum.\r\n",
+  "registered": "2015-09-01T10:11:55 -01:00",
+  "latitude": 34.426202,
+  "longitude": -69.981211,
+  "tags": [
+    "elit",
+    "nisi",
+    "ea",
+    "ad",
+    "occaecat",
+    "nisi",
+    "enim"
+  ],
+  "friends": [
+    {
+      "id": 0,
+      "name": "Cannon Fischer"
+    },
+    {
+      "id": 1,
+      "name": "Katie Rodriguez"
+    },
+    {
+      "id": 2,
+      "name": "Trisha Compton"
+    }
+  ],
+  "greeting": "Hello, Strong Everett! You have 6 unread messages.",
+  "favoriteFruit": "strawberry"
+}

@@ -1,0 +1,12 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="DocDbCli.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="EndpointUri" Type="System.String" Scope="User">
+      <Value Profile="(Default)">https://jotadocdb.documents.azure.com:443/</Value>
+    </Setting>
+    <Setting Name="AccessKey" Type="System.String" Scope="User">
+      <Value Profile="(Default)">2l2Xt9ANhewWfO2jo2kCHqb9rMZhHYVRmG1VF8OXwlm9RxkCpbasXhX0GFY4Nm5y3QazU8LXRX4UqB6IbD59fA==</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
