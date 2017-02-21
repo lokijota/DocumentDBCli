@@ -17,7 +17,7 @@
         private string _endpointUri = Properties.Settings.Default.EndpointUri;
         private string _primaryKey = Properties.Settings.Default.AccessKey;
         private DocumentClient _client;
-        private enum OperationType { NONE, TESTCONNECTION, CREATEDATABASE, CREATECOLLECTION, INSERTDOCUMENT };
+        private enum OperationType { NONE, TESTCONNECTION, CREATEDATABASE, CREATECOLLECTION, INSERTDOCUMENT, LISTDATABASES, LISTCOLLECTIONS };
 
         static void Main(string[] args)
         {
@@ -35,6 +35,22 @@
             if (args[0] == "t")
             {
                 operation = OperationType.TESTCONNECTION;
+            }
+            if (args[0] == "ld")
+            {
+                operation = OperationType.LISTDATABASES;
+            }
+            else if (args[0] == "lc")
+            {
+                if (args.Length == 2)
+                {
+                    parameters.Add("dbname", args[1]);
+                }
+                else
+                {
+                    parameters.Add("dbname", null);
+                }
+                operation = OperationType.LISTCOLLECTIONS;
             }
             else if (args[0] == "cd")
             {
@@ -112,6 +128,65 @@
                     JObject jsonObject = JObject.Parse(jsonDocument);
                     p.CreateDocumentIfNotExists(parameters["newdbname"], parameters["newcolname"], jsonObject).Wait();
                     break;
+                case OperationType.LISTDATABASES:
+                    p.ListDatabases();
+                    break;
+                case OperationType.LISTCOLLECTIONS:
+                    p.ListCollections(parameters["dbname"]);
+                    break;
+            }
+        }
+
+        private async Task ListCollections(string dbname = null)
+        {
+            await CreateDocumentDbClient();
+            List<Database> databases = null;
+
+            if (dbname == null)
+            {
+                databases = _client.CreateDatabaseQuery().ToList();
+            }
+            else
+            {
+                databases.Add(_client.CreateDatabaseQuery(string.Format("SELECT * FROM d WHERE d.id = \"{0}\"", dbname)).AsEnumerable().First());
+            }
+
+            if (databases.Count == 0)
+            {
+                Console.WriteLine("There are no databases in the account");
+            }
+            else
+            {
+                Console.WriteLine("Database Id, Database SelfLink, Collection Id, Collection SelfLink");
+            }
+
+            foreach (Database db in databases)
+            {
+                List<DocumentCollection> collections = _client.CreateDocumentCollectionQuery((String) db.SelfLink).ToList();
+                foreach(DocumentCollection dc in collections)
+                {
+                    Console.WriteLine("{0}, {1}, {2}, {3}", db.Id, db.SelfLink, dc.Id, dc.SelfLink );
+                }
+            }
+        }
+
+        private async Task ListDatabases()
+        {
+            await CreateDocumentDbClient();
+            List<Database> databases =  _client.CreateDatabaseQuery().ToList();
+
+            if(databases.Count == 0)
+            {
+                Console.WriteLine("No databases in DocumentDb account");
+            }
+            else
+            {
+                Console.WriteLine("Found {0} database(s) in DocumentDb account:", databases.Count);
+            }
+
+            foreach (Database db in databases)
+            {
+                Console.WriteLine("{0}, {1}", db.Id, db.SelfLink);   
             }
         }
 
@@ -122,7 +197,7 @@
             try
             {
                 await _client.ReadDatabaseAsync(UriFactory.CreateDatabaseUri(databaseName));
-                WriteToConsoleAndPromptToContinue("Found already existing database '{0}'", databaseName);
+                Console.WriteLine("Found already existing database '{0}'", databaseName);
             }
             catch (DocumentClientException de)
             {
@@ -130,7 +205,7 @@
                 if (de.StatusCode == HttpStatusCode.NotFound)
                 {
                     await _client.CreateDatabaseAsync(new Database { Id = databaseName,  });
-                    WriteToConsoleAndPromptToContinue("Created new database '{0}'", databaseName);
+                    Console.WriteLine("Created new database '{0}'", databaseName);
                 }
                 else
                 {
@@ -146,7 +221,7 @@
             try
             {
                 await _client.ReadDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(databaseName, collectionName));
-                WriteToConsoleAndPromptToContinue("Found already existing document collection '{0}'", collectionName);
+                Console.WriteLine("Found already existing document collection '{0}'", collectionName);
             }
             catch (DocumentClientException de)
             {
@@ -165,7 +240,7 @@
                         collectionInfo, 
                         new RequestOptions { OfferThroughput = throughput } );
 
-                    WriteToConsoleAndPromptToContinue("Created new document collection '{0}'", collectionName);
+                    Console.WriteLine("Created new document collection '{0}'", collectionName);
                 }
                 else
                 {
@@ -179,7 +254,7 @@
             await CreateDocumentDbClient();
 
             Document d = await _client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(databaseName, collectionName), jsonObject);
-            WriteToConsoleAndPromptToContinue("Created document with id {0}", d.Id);
+            Console.WriteLine("Created document with id {0}", d.Id);
         }
 
         private async Task<int> CreateDocumentDbClient()
@@ -203,13 +278,15 @@
             Console.WriteLine("DocDbCli cd dbname                       Create database named 'dbname'");
             Console.WriteLine("DocDbCli cc dbname colname [throughput, 400 by default] Create collection named 'colname' in database 'dbname'");
             Console.WriteLine("DocDbCli i dbname colname filename.json  Insert contents of json file into collection 'colname' in database 'dbname'");
+            Console.WriteLine("DocDbCli ld                              List databases");
+            Console.WriteLine("DocDbCli lc [dbname]                     List collections in a database or in all databases");
         }
 
         private void WriteToConsoleAndPromptToContinue(string format, params object[] args)
         {
             Console.WriteLine(format, args);
-            Console.WriteLine("Press any key to continue ...");
-            Console.ReadKey();
+            //Console.WriteLine("Press any key to continue ...");
+            //Console.ReadKey();
         }
     }
 }
